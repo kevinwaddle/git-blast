@@ -12,6 +12,30 @@ merged:
 """
 
 import subprocess as sp
+import sys
+import argparse
+
+def get_args(argv):
+    """get args.
+
+    Args:
+        argv (list): List of arguments.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description=(
+            'show git branches sorted by last commit date'
+        )
+    )
+
+    parser.add_argument("-f", "--dateformat",
+                        help="A git date format: rfc, iso, default, rfc2822, etc. Defaults to relative",
+                        default="relative")
+
+    args = parser.parse_args(argv)
+    return args
 
 def xcall(cmd):
     return sp.check_output(cmd.split()).decode("utf-8")
@@ -24,11 +48,14 @@ cur_branch = xcall("git rev-parse --abbrev-ref HEAD").strip()
 merged_branches = set([
     x.split()[-1] for x
     in xcall("git branch --merged").splitlines()
+
 ])
+
+args = get_args(sys.argv[1:])
 
 by_date = xcall(
     "git for-each-ref --sort=-committerdate refs/heads/ "
-    "--format=%(refname:short)%09%(committerdate:relative)"
+    "--format=%(refname:short)%09%(committerdate:{0})".format(args.dateformat)
 )
 for line in by_date.splitlines():
     branch, _, date = line.partition("\t")
